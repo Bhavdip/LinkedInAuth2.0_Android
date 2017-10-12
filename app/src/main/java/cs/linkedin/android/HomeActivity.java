@@ -1,5 +1,6 @@
 package cs.linkedin.android;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -8,11 +9,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
 import java.io.IOException;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -47,6 +46,7 @@ public class HomeActivity extends AppCompatActivity {
         +OAUTH_ACCESS_TOKEN_PARAM+EQUALS+accessToken;
   }
 
+  @SuppressLint("StaticFieldLeak")
   private class GetProfileRequestAsyncTask extends AsyncTask<String, Void, JSONObject> {
 
     @Override
@@ -58,17 +58,15 @@ public class HomeActivity extends AppCompatActivity {
     protected JSONObject doInBackground(String... urls) {
       if(urls.length>0){
         String url = urls[0];
-        HttpClient httpClient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet(url);
-        httpget.setHeader("x-li-format", "json");
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder().url(url).addHeader("x-li-format", "json").build();
         try{
-          HttpResponse response = httpClient.execute(httpget);
+          //HttpResponse response = httpClient.execute(httpget);
+          Response response = okHttpClient.newCall(request).execute();
           if(response!=null){
             //If status is OK 200
-            if(response.getStatusLine().getStatusCode()==200){
-              String result = EntityUtils.toString(response.getEntity());
-              //Convert the string result to a JSON Object
-              return new JSONObject(result);
+            if(response.isSuccessful()){
+              return new JSONObject(response.body().string());
             }
           }
         }catch(IOException e){
